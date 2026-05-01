@@ -1,9 +1,11 @@
-import { supabase } from './lib/supabase'
+import { supabase } from '@/app/lib/supabase'
+import Link from 'next/link'
 
 export default async function Home() {
   const { data: matches, error } = await supabase
     .from('matches')
-    .select(`
+    .select(
+      `
       id,
       slug,
       kickoff_at,
@@ -11,7 +13,8 @@ export default async function Home() {
       home_team:home_team_id (code, name),
       away_team:away_team_id (code, name),
       competition:competition_id (short_name)
-    `)
+    `,
+    )
     .order('kickoff_at', { ascending: true })
 
   if (error) {
@@ -26,9 +29,10 @@ export default async function Home() {
 
         <div className="space-y-3">
           {matches?.map((m: any) => (
-            <div
+            <Link
               key={m.id}
-              className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex items-center justify-between"
+              href={`/match/${m.slug}`}
+              className="block bg-slate-900 border border-slate-800 rounded-lg p-4 flex items-center justify-between hover:border-emerald-500 hover:bg-slate-800/50 transition"
             >
               <div className="flex items-center gap-4">
                 <span className="text-xs text-slate-500 font-mono">
@@ -44,7 +48,7 @@ export default async function Home() {
                   month: 'short',
                 })}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
