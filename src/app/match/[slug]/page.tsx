@@ -1,16 +1,7 @@
 import { supabase } from '@/app/lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-
-function fillTemplate(template: string, vars: Record<string, string | number | null | undefined>): string {
-  if (!template) return ''
-  let result = template
-  for (const [key, value] of Object.entries(vars)) {
-    const replacement = value !== null && value !== undefined && value !== '' ? String(value) : '—'
-    result = result.split(`{{${key}}}`).join(replacement)
-  }
-  return result
-}
+import { DecisionsTimeline } from './DecisionsTimeline'
 
 export default async function MatchPage({
   params,
@@ -50,12 +41,6 @@ export default async function MatchPage({
 
   const statusLabels: Record<string, string> = {
     scheduled: 'Programado', live: 'En vivo', ended: 'Finalizado', postponed: 'Pospuesto', cancelled: 'Cancelado',
-  }
-  const catLabels: Record<string, string> = { sanction: 'Sanción', discipline: 'Disciplinaria', tmo: 'TMO' }
-  const catColors: Record<string, string> = {
-    sanction: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    discipline: 'bg-red-500/10 text-red-400 border-red-500/30',
-    tmo: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
   }
 
   return (
@@ -101,49 +86,12 @@ export default async function MatchPage({
         </div>
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">Decisiones del referee</h2>
-          {!decisions || decisions.length === 0 ? (
-            <div className="bg-slate-900 border border-slate-800 border-dashed rounded-lg p-8 text-center text-slate-500">
-              <p className="mb-2">Sin decisiones cargadas todavía.</p>
-              <p className="text-sm">Las decisiones aparecen acá en vivo durante el partido.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {decisions.map((d: any) => {
-                const otherTeam = d.team_id === m.home_team?.id ? m.away_team?.name : d.team_id === m.away_team?.id ? m.home_team?.name : null
-                const filledBody = fillTemplate(d.template?.body_es, {
-                  player: d.player_name,
-                  team: d.team?.name,
-                  team_against: d.team?.name,
-                  team_for: otherTeam,
-                  minute: d.minute,
-                  outcome: 'pendiente',
-                })
-                return (
-                  <div key={d.id} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl font-bold text-emerald-500 tabular-nums">{d.minute}&apos;</span>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${catColors[d.template?.category] || ''}`}>
-                        {catLabels[d.template?.category] || ''}
-                      </span>
-                      <span className="font-semibold">{d.template?.title_es}</span>
-                    </div>
-                    {d.player_name && (
-                      <div className="text-sm text-slate-400 mb-2">
-                        Jugador: <span className="text-white">{d.player_name}</span>
-                        {d.team && <span className="text-slate-500"> ({d.team.name})</span>}
-                      </div>
-                    )}
-                    <div className="text-sm text-slate-300">{filledBody}</div>
-                    {d.law && (
-                      <a href={d.law.worldrugby_url} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-emerald-400 hover:text-emerald-300">
-                        → Ver {d.law.code}: {d.law.title_es} en World Rugby
-                      </a>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          <DecisionsTimeline
+            matchId={m.id}
+            initialDecisions={decisions ?? []}
+            homeTeam={m.home_team}
+            awayTeam={m.away_team}
+          />
         </div>
       </div>
     </main>
