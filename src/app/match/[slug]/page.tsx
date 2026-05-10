@@ -27,7 +27,7 @@ export default async function MatchPage({
   const { data: decisions } = await supabase
     .from('decisions')
     .select(`
-      id, minute, half, player_name, team_id, created_at,
+      id, minute, half, player_name, team_id, video_url, created_at,
       template:template_id (title_es, body_es, category),
       team:team_id (code, name),
       law:law_id (code, title_es, worldrugby_url)

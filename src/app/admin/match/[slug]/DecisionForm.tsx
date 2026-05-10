@@ -12,6 +12,7 @@ export function DecisionForm({ match, templates, operatorId }: any) {
   const [half, setHalf] = useState('first')
   const [playerName, setPlayerName] = useState('')
   const [teamId, setTeamId] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,6 +34,7 @@ export function DecisionForm({ match, templates, operatorId }: any) {
       team_id: teamId || null,
       law_id: selected.default_law_id,
       variables: {},
+      video_url: videoUrl || null,
       operator_id: operatorId,
     })
     if (err) {
@@ -72,6 +74,7 @@ export function DecisionForm({ match, templates, operatorId }: any) {
             {match.home_team && <option value={match.home_team.id}>{match.home_team.name}</option>}
             {match.away_team && <option value={match.away_team.id}>{match.away_team.name}</option>}
           </select>
+          <input type="url" placeholder="URL del clip (opcional, ej. YouTube)" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className={inp} />
           {error && <div className="bg-red-950 text-red-400 p-3 rounded">{error}</div>}
           <button type="submit" disabled={loading || !templateId} className="w-full bg-emerald-500 disabled:opacity-50 text-slate-950 font-semibold py-3 rounded-lg">
             {loading ? 'Cargando...' : 'Cargar decisión'}

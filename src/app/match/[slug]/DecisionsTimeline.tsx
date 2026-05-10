@@ -49,7 +49,7 @@ export function DecisionsTimeline({
           const { data } = await supabase
             .from('decisions')
             .select(`
-              id, minute, half, player_name, team_id, created_at,
+              id, minute, half, player_name, team_id, video_url, created_at,
               template:template_id (title_es, body_es, category),
               team:team_id (code, name),
               law:law_id (code, title_es, worldrugby_url)
@@ -142,11 +142,18 @@ export function DecisionsTimeline({
                   </div>
                 )}
                 <div className="text-sm text-slate-300">{filledBody}</div>
-                {d.law && (
-                  <a href={d.law.worldrugby_url} target="_blank" rel="noreferrer" className="inline-block mt-3 text-xs text-emerald-400 hover:text-emerald-300">
-                    → Ver {d.law.code}: {d.law.title_es} en World Rugby
-                  </a>
-                )}
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  {d.video_url && (
+                    <a href={d.video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-semibold transition">
+                      ▶ Ver clip
+                    </a>
+                  )}
+                  {d.law && (
+                    <a href={d.law.worldrugby_url} target="_blank" rel="noreferrer" className="inline-block text-xs text-emerald-400 hover:text-emerald-300">
+                      → Ver {d.law.code}: {d.law.title_es} en World Rugby
+                    </a>
+                  )}
+                </div>
               </div>
             )
           })}
