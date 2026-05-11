@@ -4,6 +4,23 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 
+const catLabels: Record<string, string> = { sanction: 'Sanción', discipline: 'Disciplinaria', tmo: 'TMO' }
+const catColors: Record<string, string> = {
+  sanction: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+  discipline: 'bg-red-500/10 text-red-400 border-red-500/30',
+  tmo: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+}
+
+function fill(template: string, vars: Record<string, any>): string {
+  if (!template) return ''
+  let r = template
+  for (const [k, v] of Object.entries(vars)) {
+    const rep = v !== null && v !== undefined && v !== '' ? String(v) : '—'
+    r = r.split(`{{${k}}}`).join(rep)
+  }
+  return r
+}
+
 export function DecisionForm({ match, templates, operatorId }: any) {
   const router = useRouter()
   const [category, setCategory] = useState('sanction')
@@ -18,6 +35,18 @@ export function DecisionForm({ match, templates, operatorId }: any) {
 
   const filtered = templates.filter((t: any) => t.category === category)
   const selected = templates.find((t: any) => t.id === templateId)
+
+  const selectedTeamName = teamId === match.home_team?.id ? match.home_team?.name : teamId === match.away_team?.id ? match.away_team?.name : null
+  const otherTeamName = teamId === match.home_team?.id ? match.away_team?.name : teamId === match.away_team?.id ? match.home_team?.name : null
+
+  const previewBody = selected ? fill(selected.body_es, {
+    player: playerName,
+    team: selectedTeamName,
+    team_against: selectedTeamName,
+    team_for: otherTeamName,
+    minute: minute,
+    outcome: 'pendiente',
+  }) : ''
 
   async function handleSubmit(e: any) {
     e.preventDefault()
@@ -75,6 +104,32 @@ export function DecisionForm({ match, templates, operatorId }: any) {
             {match.away_team && <option value={match.away_team.id}>{match.away_team.name}</option>}
           </select>
           <input type="url" placeholder="URL del clip (opcional, ej. YouTube)" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className={inp} />
+
+          {selected && (
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+              <div className="text-xs text-slate-500 mb-3 uppercase tracking-wide">Vista previa</div>
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <span className="text-2xl font-bold text-emerald-500 tabular-nums">{minute || '—'}&apos;</span>
+                <span className={`px-2 py-1 rounded text-xs font-semibold border ${catColors[selected.category]}`}>
+                  {catLabels[selected.category]}
+                </span>
+                <span className="font-semibold">{selected.title_es}</span>
+              </div>
+              {playerName && (
+                <div className="text-sm text-slate-400 mb-2">
+                  Jugador: <span className="text-white">{playerName}</span>
+                  {selectedTeamName && <span className="text-slate-500"> ({selectedTeamName})</span>}
+                </div>
+              )}
+              <div className="text-sm text-slate-300">{previewBody}</div>
+              {videoUrl && (
+                <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 text-xs font-semibold">
+                  ▶ Ver clip
+                </div>
+              )}
+            </div>
+          )}
+
           {error && <div className="bg-red-950 text-red-400 p-3 rounded">{error}</div>}
           <button type="submit" disabled={loading || !templateId} className="w-full bg-emerald-500 disabled:opacity-50 text-slate-950 font-semibold py-3 rounded-lg">
             {loading ? 'Cargando...' : 'Cargar decisión'}
