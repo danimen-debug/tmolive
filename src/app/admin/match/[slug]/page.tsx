@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/app/lib/supabase-server'
 import { DecisionForm } from './DecisionForm'
+import { DecisionsList } from './DecisionsList'
 
 export default async function AdminMatchPage({
   params,
@@ -53,11 +54,27 @@ export default async function AdminMatchPage({
     .order('category')
     .order('title_es')
 
+  const { data: decisions } = await supabase
+    .from('decisions')
+    .select(`
+      id, minute, half, player_name, team_id, created_at,
+      template:template_id (title_es, category),
+      team:team_id (code, name)
+    `)
+    .eq('match_id', (match as any).id)
+    .order('created_at', { ascending: false })
+
   return (
-    <DecisionForm
-      match={match as any}
-      templates={(templates ?? []) as any}
-      operatorId={operator.id}
-    />
+    <>
+      <DecisionForm
+        match={match as any}
+        templates={(templates ?? []) as any}
+        operatorId={operator.id}
+      />
+      <div className="max-w-2xl mx-auto px-8 pb-8 -mt-4 bg-slate-950 text-white">
+        <h2 className="text-lg font-bold mb-3 text-slate-300">Decisiones cargadas</h2>
+        <DecisionsList initialDecisions={decisions ?? []} />
+      </div>
+    </>
   )
 }
