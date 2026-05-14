@@ -40,22 +40,28 @@ export function DecisionsTimeline({
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
+
+    async function fetchFullDecision(id: string) {
+      const { data } = await supabase
+        .from('decisions')
+        .select(`
+          id, minute, half, player_name, team_id, video_url, created_at,
+          template:template_id (title_es, body_es, category),
+          team:team_id (code, name),
+          law:law_id (code, title_es, worldrugby_url)
+        `)
+        .eq('id', id)
+        .single()
+      return data
+    }
+
     const channel = supabase
       .channel(`match-${matchId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'decisions', filter: `match_id=eq.${matchId}` },
         async (payload) => {
-          const { data } = await supabase
-            .from('decisions')
-            .select(`
-              id, minute, half, player_name, team_id, video_url, created_at,
-              template:template_id (title_es, body_es, category),
-              team:team_id (code, name),
-              law:law_id (code, title_es, worldrugby_url)
-            `)
-            .eq('id', (payload.new as any).id)
-            .single()
+          const data = await fetchFullDecision((payload.new as any).id)
           if (data) {
             const decId = (data as any).id
             setDecisions((prev) => [data, ...prev])
@@ -70,6 +76,24 @@ export function DecisionsTimeline({
           }
         },
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'decisions', filter: `match_id=eq.${matchId}` },
+        async (payload) => {
+          const data = await fetchFullDecision((payload.new as any).id)
+          if (data) {
+            setDecisions((prev) => prev.map((d) => (d.id === (data as any).id ? data : d)))
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'decisions', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          const deletedId = (payload.old as any).id
+          setDecisions((prev) => prev.filter((d) => d.id !== deletedId))
+        },
+      )
       .subscribe((status) => {
         setConnected(status === 'SUBSCRIBED')
       })
@@ -77,7 +101,7 @@ export function DecisionsTimeline({
       supabase.removeChannel(channel)
     }
   }, [matchId])
-
+  
   return (
     <>
       <style>{`
