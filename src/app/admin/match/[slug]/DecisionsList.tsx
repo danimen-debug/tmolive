@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createSupabaseBrowserClient } from '@/app/lib/supabase-browser'
 
 const catLabels: Record<string, string> = { sanction: 'Sanción', discipline: 'Disciplinaria', tmo: 'TMO' }
@@ -49,13 +50,21 @@ export function DecisionsList({ initialDecisions }: { initialDecisions: any[] })
               {catLabels[d.template?.category] || ''}
             </span>
             <span className="font-semibold text-sm">{d.template?.title_es}</span>
-            <button
-              onClick={() => handleDelete(d.id)}
-              disabled={deletingId === d.id}
-              className="ml-auto px-3 py-1 rounded bg-red-950 hover:bg-red-900 disabled:opacity-50 text-red-400 text-xs font-semibold transition"
-            >
-              {deletingId === d.id ? 'Borrando...' : '🗑 Borrar'}
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <Link
+                href={`/admin/decision/${d.id}`}
+                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+              >
+                ✏ Editar
+              </Link>
+              <button
+                onClick={() => handleDelete(d.id)}
+                disabled={deletingId === d.id}
+                className="px-3 py-1 rounded bg-red-950 hover:bg-red-900 disabled:opacity-50 text-red-400 text-xs font-semibold transition"
+              >
+                {deletingId === d.id ? 'Borrando...' : '🗑 Borrar'}
+              </button>
+            </div>
           </div>
           {d.player_name && (
             <div className="text-xs text-slate-400">

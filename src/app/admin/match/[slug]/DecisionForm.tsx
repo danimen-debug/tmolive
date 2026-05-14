@@ -21,15 +21,19 @@ function fill(template: string, vars: Record<string, any>): string {
   return r
 }
 
-export function DecisionForm({ match, templates, operatorId }: any) {
+export function DecisionForm({ match, templates, operatorId, existingDecision }: any) {
   const router = useRouter()
-  const [category, setCategory] = useState('sanction')
-  const [templateId, setTemplateId] = useState('')
-  const [minute, setMinute] = useState('')
-  const [half, setHalf] = useState('first')
-  const [playerName, setPlayerName] = useState('')
-  const [teamId, setTeamId] = useState('')
-  const [videoUrl, setVideoUrl] = useState('')
+  const isEdit = !!existingDecision
+
+  const initialTemplate = isEdit ? templates.find((t: any) => t.id === existingDecision.template_id) : null
+
+  const [category, setCategory] = useState(initialTemplate?.category || 'sanction')
+  const [templateId, setTemplateId] = useState(existingDecision?.template_id || '')
+  const [minute, setMinute] = useState(existingDecision?.minute?.toString() || '')
+  const [half, setHalf] = useState(existingDecision?.half || 'first')
+  const [playerName, setPlayerName] = useState(existingDecision?.player_name || '')
+  const [teamId, setTeamId] = useState(existingDecision?.team_id || '')
+  const [videoUrl, setVideoUrl] = useState(existingDecision?.video_url || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,7 +58,8 @@ export function DecisionForm({ match, templates, operatorId }: any) {
     setLoading(true)
     setError(null)
     const supabase = createSupabaseBrowserClient()
-    const { error: err } = await supabase.from('decisions').insert({
+
+    const payload = {
       match_id: match.id,
       minute: parseInt(minute, 10),
       half,
@@ -65,13 +70,19 @@ export function DecisionForm({ match, templates, operatorId }: any) {
       variables: {},
       video_url: videoUrl || null,
       operator_id: operatorId,
-    })
+    }
+
+    const { error: err } = isEdit
+      ? await supabase.from('decisions').update(payload).eq('id', existingDecision.id)
+      : await supabase.from('decisions').insert(payload)
+
     if (err) {
       setError(err.message)
       setLoading(false)
       return
     }
-    router.push(`/match/${match.slug}`)
+
+    router.push(isEdit ? `/admin/match/${match.slug}` : `/match/${match.slug}`)
     router.refresh()
   }
 
@@ -80,7 +91,7 @@ export function DecisionForm({ match, templates, operatorId }: any) {
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2 text-emerald-500">Cargar decisión</h1>
+        <h1 className="text-2xl font-bold mb-2 text-emerald-500">{isEdit ? 'Editar decisión' : 'Cargar decisión'}</h1>
         <p className="text-slate-400 mb-6">{match.home_team?.name} vs {match.away_team?.name}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <select value={category} onChange={(e) => { setCategory(e.target.value); setTemplateId('') }} className={inp}>
@@ -132,7 +143,7 @@ export function DecisionForm({ match, templates, operatorId }: any) {
 
           {error && <div className="bg-red-950 text-red-400 p-3 rounded">{error}</div>}
           <button type="submit" disabled={loading || !templateId} className="w-full bg-emerald-500 disabled:opacity-50 text-slate-950 font-semibold py-3 rounded-lg">
-            {loading ? 'Cargando...' : 'Cargar decisión'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Cargar decisión'}
           </button>
         </form>
       </div>
